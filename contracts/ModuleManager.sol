@@ -1,4 +1,5 @@
 pragma solidity 0.4.24;
+
 import "./Module.sol";
 import "./MasterCopy.sol";
 import "./Enum.sol";
@@ -15,23 +16,23 @@ contract ModuleManager is SelfAuthorized {
     string public constant VERSION = "0.0.1";
     address public constant SENTINEL_MODULES = address(0x1);
 
-    mapping (address => address) internal modules;
+    mapping(address => address) internal modules;
 
     /// @dev Fallback function accepts Ether transactions.
-    function ()
-        external
-        payable
+    function()
+    external
+    payable
     {
 
     }
 
     function setupModules(address to, bytes data)
-        internal
+    internal
     {
         require(modules[SENTINEL_MODULES] == 0, "Modules have already been initialized");
         modules[SENTINEL_MODULES] = SENTINEL_MODULES;
         if (to != 0)
-            // Setup has to complete successfully or transaction fails.
+        // Setup has to complete successfully or transaction fails.
             require(executeDelegateCall(to, data, gasleft()), "Could not finish initialization");
     }
 
@@ -39,8 +40,8 @@ contract ModuleManager is SelfAuthorized {
     ///      This can only be done via a Safe transaction.
     /// @param module Module to be whitelisted.
     function enableModule(Module module)
-        public
-        authorized
+    public
+    authorized
     {
         // Module address cannot be null or sentinel.
         require(address(module) != 0 && address(module) != SENTINEL_MODULES, "Invalid module address provided");
@@ -55,8 +56,8 @@ contract ModuleManager is SelfAuthorized {
     /// @param prevModule Module that pointed to the module to be removed in the linked list
     /// @param module Module to be removed.
     function disableModule(Module prevModule, Module module)
-        public
-        authorized
+    public
+    authorized
     {
         // Validate module address and check that it corresponds to module index.
         require(address(module) != 0 && address(module) != SENTINEL_MODULES, "Invalid module address provided");
@@ -71,8 +72,8 @@ contract ModuleManager is SelfAuthorized {
     /// @param data Data payload of module transaction.
     /// @param operation Operation type of module transaction.
     function execTransactionFromModule(address to, uint256 value, bytes data, Enum.Operation operation)
-        public
-        returns (bool success)
+    public
+    returns (bool success)
     {
         // Only whitelisted modules are allowed.
         require(modules[msg.sender] != 0, "Method can only be called from an enabled module");
@@ -81,8 +82,8 @@ contract ModuleManager is SelfAuthorized {
     }
 
     function execute(address to, uint256 value, bytes data, Enum.Operation operation, uint256 txGas)
-        internal
-        returns (bool success)
+    internal
+    returns (bool success)
     {
         if (operation == Enum.Operation.Call)
             success = executeCall(to, value, data, txGas);
@@ -96,8 +97,8 @@ contract ModuleManager is SelfAuthorized {
     }
 
     function executeCall(address to, uint256 value, bytes data, uint256 txGas)
-        internal
-        returns (bool success)
+    internal
+    returns (bool success)
     {
         // solium-disable-next-line security/no-inline-assembly
         assembly {
@@ -106,8 +107,8 @@ contract ModuleManager is SelfAuthorized {
     }
 
     function executeDelegateCall(address to, bytes data, uint256 txGas)
-        internal
-        returns (bool success)
+    internal
+    returns (bool success)
     {
         // solium-disable-next-line security/no-inline-assembly
         assembly {
@@ -116,8 +117,8 @@ contract ModuleManager is SelfAuthorized {
     }
 
     function executeCreate(bytes data)
-        internal
-        returns (address newContract)
+    internal
+    returns (address newContract)
     {
         // solium-disable-next-line security/no-inline-assembly
         assembly {
@@ -128,14 +129,14 @@ contract ModuleManager is SelfAuthorized {
     /// @dev Returns array of modules.
     /// @return Array of modules.
     function getModules()
-        public
-        view
-        returns (address[])
+    public
+    view
+    returns (address[])
     {
         // Calculate module count
         uint256 moduleCount = 0;
         address currentModule = modules[SENTINEL_MODULES];
-        while(currentModule != SENTINEL_MODULES) {
+        while (currentModule != SENTINEL_MODULES) {
             currentModule = modules[currentModule];
             moduleCount ++;
         }
@@ -144,7 +145,7 @@ contract ModuleManager is SelfAuthorized {
         // populate return array
         moduleCount = 0;
         currentModule = modules[SENTINEL_MODULES];
-        while(currentModule != SENTINEL_MODULES) {
+        while (currentModule != SENTINEL_MODULES) {
             array[moduleCount] = currentModule;
             currentModule = modules[currentModule];
             moduleCount ++;

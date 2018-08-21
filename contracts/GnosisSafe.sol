@@ -6,7 +6,7 @@ import "./OwnerManager.sol";
 
 /// @title Gnosis Safe - A multisignature wallet with support for modules and owners. This contract needs to be extented to add functionality to execute transactions.
 /// @author Stefan George - <stefan@gnosis.pm>
-contract GnosisSafe is ModuleManager, OwnerManager {
+contract GnosisSafe is ModuleManager, OwnerManager, RegistryManager {
 
     /// @dev Setup function sets initial storage of contract.
     /// @param _owners List of Safe owners.

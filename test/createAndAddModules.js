@@ -38,7 +38,7 @@ contract('CreateAndAddModules', function(accounts) {
         let stateChannelSetupData = await stateChannelModuleMasterCopy.contract.setup.getData()
         let stateChannelCreationData = await proxyFactory.contract.createProxy.getData(stateChannelModuleMasterCopy.address, stateChannelSetupData)
 
-        // Create library data
+        // Create library dataf
         let modulesCreationData = utils.createAndAddModulesData([recoveryCreationData,stateChannelCreationData])
         let createAndAddModulesData = createAndAddModules.contract.createAndAddModules.getData(proxyFactory.address, modulesCreationData)
 

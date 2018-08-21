@@ -35,7 +35,7 @@ contract GnosisSafeTeamEdition is MasterCopy, GnosisSafe {
         public
     {
         // Only Safe owners are allowed to confirm Safe transactions.
-        require(owners[msg.sender] != 0, "Sender is not an owner");
+        require(registries[msg.sender] != 0, "Sender is not an owner");
         bytes32 transactionHash = getTransactionHash(to, value, data, operation, nonce);
         // It should not be possible to confirm an executed transaction
         require(isExecuted[transactionHash] == 0, "Safe transaction already executed");
@@ -71,7 +71,7 @@ contract GnosisSafeTeamEdition is MasterCopy, GnosisSafe {
         mapping(address => uint256) approvals = isApproved[transactionHash];
         uint256 confirmations = 0;
         // Validate threshold is reached.
-        address currentOwner = owners[SENTINEL_OWNERS];
+        address currentOwner = registries[SENTINEL_OWNERS];
         while (currentOwner != SENTINEL_OWNERS) {
             bool ownerConfirmed = approvals[currentOwner] != 0;
             if(currentOwner == msg.sender || ownerConfirmed) {
@@ -80,7 +80,7 @@ contract GnosisSafeTeamEdition is MasterCopy, GnosisSafe {
                 }
                 confirmations ++;
             }
-            currentOwner = owners[currentOwner];
+            currentOwner = registries[currentOwner];
         }
         require(confirmations >= threshold, "Not enough confirmations");
     }

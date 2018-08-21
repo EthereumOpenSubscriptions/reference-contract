@@ -1,4 +1,5 @@
 pragma solidity 0.4.24;
+
 import "./GnosisSafe.sol";
 import "./MasterCopy.sol";
 import "./SignatureValidator.sol";
@@ -11,15 +12,16 @@ import "./SecuredTokenTransfer.sol";
 /// @author Ricardo Guilherme Schmidt - (Status Research & Development GmbH) - Gas Token Payment
 contract GnosisSafePersonalEdition is MasterCopy, GnosisSafe, SignatureValidator, SecuredTokenTransfer {
 
-    string public constant NAME = "Gnosis Safe Personal Edition";
+    string public constant NAME = "Groundhog Safe Personal Edition";
     string public constant VERSION = "0.0.1";
-    
+
     event ExecutionFailed(bytes32 txHash);
+    event ExecutionSubscriptionFailed(bytes32 txHash);
 
     uint256 public nonce;
 
     /// @dev Allows to execute a Safe transaction confirmed by required number of owners and then pays the account that submitted the transaction.
-    ///      Note: The fees are always transfered, even if the user transaction fails. 
+    ///      Note: The fees are always transferred, even if the user transaction fails.
     /// @param to Destination address of Safe transaction.
     /// @param value Ether value of Safe transaction.
     /// @param data Data payload of Safe transaction.
@@ -30,18 +32,18 @@ contract GnosisSafePersonalEdition is MasterCopy, GnosisSafe, SignatureValidator
     /// @param gasToken Token address (or 0 if ETH) that is used for the payment.
     /// @param signatures Packed signature data ({bytes32 r}{bytes32 s}{uint8 v})
     function execTransactionAndPaySubmitter(
-        address to, 
-        uint256 value, 
-        bytes data, 
-        Enum.Operation operation, 
+        address to,
+        uint256 value,
+        bytes data,
+        Enum.Operation operation,
         uint256 safeTxGas,
         uint256 dataGas,
         uint256 gasPrice,
         address gasToken,
         bytes signatures
     )
-        public
-        returns (bool success)
+    public
+    returns (bool success)
     {
         uint256 startGas = gasleft();
         bytes32 txHash = getTransactionHash(to, value, data, operation, safeTxGas, dataGas, gasPrice, gasToken, nonce);
@@ -53,23 +55,44 @@ contract GnosisSafePersonalEdition is MasterCopy, GnosisSafe, SignatureValidator
         if (!success) {
             emit ExecutionFailed(txHash);
         }
-        
+
+        if (gasPrice > 0) {
+            paySubmitter(gasPrice, gasToken);
+        }
+
+    }
+
+
+    function paySubmitter(
+        uint256 gasPrice,
+        address gasToken
+    )
+    authorized
+    internal
+    {
+
         // We transfer the calculated tx costs to the tx.origin to avoid sending it to intermediate contracts that have made calls
         if (gasPrice > 0) {
             uint256 gasCosts = (startGas - gasleft()) + dataGas;
             uint256 amount = gasCosts * gasPrice;
             if (gasToken == address(0)) {
-                 // solium-disable-next-line security/no-tx-origin,security/no-send
+                // solium-disable-next-line security/no-tx-origin,security/no-send
                 require(tx.origin.send(amount), "Could not pay gas costs with ether");
             } else {
-                 // solium-disable-next-line security/no-tx-origin
+                // solium-disable-next-line security/no-tx-origin
                 require(transferToken(gasToken, tx.origin, amount), "Could not pay gas costs with token");
             }
-        }  
+        }
     }
 
+
+
+
+
+
+
     /// @dev Allows to estimate a Safe transaction. 
-    ///      This method is only meant for estimation purpose, therfore two different protection mechanism against execution in a transaction have been made:
+    ///      This method is only meant for estimation purpose, therefore two different protection mechanism against execution in a transaction have been made:
     ///      1.) The method can only be called from the safe itself
     ///      2.) The response is returned with a revert
     ///      When estimating set `from` to the address of the safe.
@@ -80,9 +103,9 @@ contract GnosisSafePersonalEdition is MasterCopy, GnosisSafe, SignatureValidator
     /// @param operation Operation type of Safe transaction.
     /// @return Estimate without refunds and overhead fees (base transaction and payload data gas costs).
     function requiredTxGas(address to, uint256 value, bytes data, Enum.Operation operation)
-        public
-        authorized
-        returns (uint256)
+    public
+    authorized
+    returns (uint256)
     {
         uint256 startGas = gasleft();
         // We don't provide an error message here, as we use it to return the estimate
@@ -93,8 +116,8 @@ contract GnosisSafePersonalEdition is MasterCopy, GnosisSafe, SignatureValidator
     }
 
     function checkHash(bytes32 txHash, bytes signatures)
-        internal
-        view
+    internal
+    view
     {
         // There cannot be an owner with address 0.
         address lastOwner = address(0);
@@ -109,6 +132,9 @@ contract GnosisSafePersonalEdition is MasterCopy, GnosisSafe, SignatureValidator
         }
     }
 
+
+
+
     /// @dev Returns hash to be signed by owners.
     /// @param to Destination address.
     /// @param value Ether value.
@@ -121,19 +147,19 @@ contract GnosisSafePersonalEdition is MasterCopy, GnosisSafe, SignatureValidator
     /// @param _nonce Transaction nonce.
     /// @return Transaction hash.
     function getTransactionHash(
-        address to, 
-        uint256 value, 
-        bytes data, 
-        Enum.Operation operation, 
-        uint256 safeTxGas, 
-        uint256 dataGas, 
-        uint256 gasPrice, 
+        address to,
+        uint256 value,
+        bytes data,
+        Enum.Operation operation,
+        uint256 safeTxGas,
+        uint256 dataGas,
+        uint256 gasPrice,
         address gasToken,
         uint256 _nonce
     )
-        public
-        view
-        returns (bytes32)
+    public
+    view
+    returns (bytes32)
     {
         return keccak256(
             abi.encodePacked(byte(0x19), byte(0), this, to, value, data, operation, safeTxGas, dataGas, gasPrice, gasToken, _nonce)
