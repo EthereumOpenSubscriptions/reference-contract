@@ -39,6 +39,32 @@ contract SubscriptionModule is Module, iERC165, GnosisSafePersonalEdition {
         registry = RegistryManager(_registry);
     }
 
+    function createSubscription(
+      address to,
+      uint256 value,
+      bytes data,
+      Enum.Operation operation,
+      uint256 safeTxGas,
+      uint256 dataGas,
+      uint256 gasPrice,
+      address gasToken,
+      uint externalId
+      )
+      public
+      returns (bytes32 subscriptionHash)
+      {
+
+        Meta storage m;
+        m.status = VALID;
+        m.nextWithdraw = now;
+        m.externalId = externalId;
+
+        subscriptionHash = getSubscriptionHash(to, value, data, operation, safeTxGas, dataGas, gasPrice, gasToken);
+
+        subscriptions[subscriptionHash] = m;
+
+      }
+
     function execSubscriptionAndPaySubmitter(
         address to,
         uint256 value,
@@ -50,7 +76,10 @@ contract SubscriptionModule is Module, iERC165, GnosisSafePersonalEdition {
         address gasToken,
         bytes signatures
     )
-    public returns (bool success)
+    public
+    returns (
+        bool success
+    )
     {
         uint256 startGas = gasleft();
 
@@ -64,6 +93,11 @@ contract SubscriptionModule is Module, iERC165, GnosisSafePersonalEdition {
         require(gasleft() >= safeTxGas, "Not enough gas to execute safe transaction");
 
         success = executeSubscription(to, value, data, operation, safeTxGas);
+
+        uint lastWithdarw = subscriptions[txHash].nextWithdraw;
+
+        /* period by which to increment withdraw period should be encoded in data field, leaving as 30 days for ease today */
+        subscriptions[txHash].nextWithdraw = lastWithdraw + 30 days;
 
         if (!success) {
             emit ExecutionSubscriptionFailed(txHash);
@@ -285,6 +319,8 @@ INTERFACE
         } else {
             success = false;
         }
+
+
     }
 
 }
