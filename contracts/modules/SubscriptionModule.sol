@@ -2,14 +2,13 @@ pragma solidity 0.4.24;
 
 import "../Enum.sol";
 import "../Module.sol";
-import "../ModuleManager.sol";
-import "../OwnerManager.sol";
-import "../RegistryManager.sol";
 import "../iERC165.sol";
+import "../GnosisSafePersonalEdition";
+
 
 /// @title ERC-948 Subscription Module -
 /// @author Andrew Redden - <andrew@groundhog.network>
-contract SubscriptionModule is Module, iERC165 {
+contract SubscriptionModule is Module, iERC165, GnosisSafePersonalEdition {
 
     string public constant NAME = "ERC-948 Subscription Module";
     string public constant VERSION = "0.0.1";
@@ -86,7 +85,7 @@ contract SubscriptionModule is Module, iERC165 {
         }
     }
 
-
+/* txHash is declared but never used */
     function checkSubscriptionHash(bytes32 txHash, bytes signatures)
     internal
     view
@@ -168,12 +167,16 @@ INTERFACE
         returns (
             bool success
         ){
-
+          if (subscriptions[subscriptionHash] == 0){
+            return false;
+          } else {
+            return true;
+          }
     }
 
-      /** @dev returns the value of the subscription
+      /** @dev returns the value of the subscription's status
       * @param bytes subscriptionHash is the identifier of the customer's subscription with its relevant details.
-      * @return status is the enumerated status of the current subscription, 0 expired, 1 active, 2 paused, 3 cancelled
+      * @return status is the enumerated status of the current subscription, 0 expired, 1 valid, 2 cancelled
       **/
     function getSubscriptionStatus(
         uint256 subscriptionHash
@@ -183,7 +186,15 @@ INTERFACE
         returns  (
           uint status
         ){
+          sub = subscriptions[subscriptionHash];
 
+          if (sub.status == expired){
+            return 0;
+          } else if (sub.status == active){
+            return 1;
+          } else if (sub.status == cancelled){
+            return 2;
+          }
     }
 
     function getSubscriptionHash(
@@ -220,7 +231,10 @@ INTERFACE
         returns (
             bytes32 modifyStatusHash
         ){
-
+          /* this may be a naive impementation of the abi.encodePacked function */
+          return keccak256(
+              abi.encodePacked(byte(0x19), byte(0), this, subscriptionHash, status)
+          );
     }
 
         /** @dev modifys the current subscription status
