@@ -4,8 +4,8 @@ contract Registry {
 
     mapping(address => bool) public isOperator;
 
-    function handlePaymentNotification(address, uint, uint, bool) public;
+    function handlePaymentNotification(address, uint, uint, bool);
 
-    function handleNewSubscription(address, address, uint, uint) public;
+    function handleNewSubscription(address, address, uint, uint);
 
 }
