@@ -7,6 +7,14 @@ contract Enum {
     enum Operation {
         Call,
         DelegateCall,
-        Create
+        Create,
+        ERC20,
+        ERC20Approve
+    }
+
+    enum SubscriptionStatus {
+        VALID,
+        CANCELLED,
+        EXPIRED
     }
 }
